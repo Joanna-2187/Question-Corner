@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Question Corner</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="page">
+    <h1>Question Corner</h1>
+    <p>Open the chat bubble in the corner any time during class. Ask a question, choose a
+       hint or a short answer, and get a log and study guide when you end the session.</p>
+  </main>
+
+  <button id="qc-launcher" class="qc-launcher" aria-label="Open Question Corner" aria-expanded="false">?</button>
+
+  <section id="qc-panel" class="qc-panel" role="dialog" aria-label="Question Corner" hidden>
+    <header class="qc-header">
+      <strong>Question Corner</strong>
+      <span class="qc-header-actions">
+        <button id="qc-end" class="qc-link">End session</button>
+        <button id="qc-close" class="qc-icon" aria-label="Close">&times;</button>
+      </span>
+    </header>
+
+    <!-- Ask -->
+    <div id="qc-ask" class="qc-view">
+      <ol id="qc-thread" class="qc-thread" aria-live="polite"></ol>
+      <form id="qc-form">
+        <label for="qc-question" class="qc-sr">Your question</label>
+        <textarea id="qc-question" rows="3" maxlength="1000" placeholder="Type your question..." required></textarea>
+        <div class="qc-buttons">
+          <button type="submit" value="hint" class="qc-secondary">Give me a hint</button>
+          <button type="submit" value="answer" class="qc-primary">Short answer</button>
+        </div>
+      </form>
+      <p id="qc-ask-error" class="qc-error" role="alert"></p>
+    </div>
+
+    <!-- Session summary -->
+    <div id="qc-summary" class="qc-view" hidden>
+      <h2>Session log</h2>
+      <p id="qc-empty" class="qc-small" hidden>You didn't ask any questions this session.</p>
+      <ol id="qc-log" class="qc-thread"></ol>
+      <div id="qc-guide-wrap" hidden>
+        <h2>Study guide</h2>
+        <div id="qc-guide" class="qc-guide" aria-live="polite"></div>
+        <button id="qc-guide-btn" class="qc-secondary">Generate study guide</button>
+      </div>
+      <p id="qc-summary-error" class="qc-error" role="alert"></p>
+      <div class="qc-buttons">
+        <button id="qc-copy" class="qc-secondary" hidden>Copy log + guide</button>
+        <button id="qc-new" class="qc-primary">New session</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

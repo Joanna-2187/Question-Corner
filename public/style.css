@@ -1,0 +1,110 @@
+/* Colors (light and dark) */
+:root {
+  --bg: #ffffff;
+  --fg: #1d1d1f;
+  --muted: #5f6368;
+  --border: #d5d8dc;
+  --accent: #4b2e83;
+  --accent-fg: #ffffff;
+  --card: #f4f2f8;
+  --error: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1b22;
+    --fg: #f1f0f5;
+    --muted: #a9a7b3;
+    --border: #3a3846;
+    --accent: #b7a2f0;
+    --accent-fg: #1c1b22;
+    --card: #2a2833;
+    --error: #ff8a80;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.45;
+}
+
+.page { max-width: 640px; margin: 10vh auto; padding: 0 16px; }
+
+/* Floating "?" button and chat panel */
+.qc-launcher {
+  position: fixed; right: 20px; bottom: 20px;
+  width: 56px; height: 56px; border-radius: 50%;
+  border: 0; background: var(--accent); color: var(--accent-fg);
+  font-size: 28px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+}
+
+.qc-panel {
+  position: fixed; right: 20px; bottom: 90px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: min(600px, calc(100vh - 110px));
+  display: flex; flex-direction: column;
+  background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .3);
+  overflow: hidden;
+}
+.qc-panel[hidden] { display: none; }
+
+.qc-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; background: var(--accent); color: var(--accent-fg);
+}
+.qc-header-actions { display: flex; gap: 10px; align-items: center; }
+
+.qc-view { padding: 14px; overflow-y: auto; }
+.qc-view[hidden] { display: none; }
+.qc-view h2 { font-size: 1rem; margin: 0 0 8px; }
+
+/* Form fields and buttons */
+label { display: block; font-weight: 600; margin-bottom: 4px; }
+input, textarea {
+  width: 100%; padding: 8px; font: inherit;
+  background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+textarea { resize: vertical; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+button { font: inherit; cursor: pointer; }
+button:disabled { opacity: .6; cursor: progress; }
+.qc-primary, .qc-secondary {
+  padding: 8px 14px; border-radius: 8px; border: 1px solid var(--accent);
+}
+.qc-primary { background: var(--accent); color: var(--accent-fg); }
+.qc-secondary { background: transparent; color: var(--fg); }
+.qc-link {
+  background: none; border: 0; color: inherit; text-decoration: underline; padding: 0;
+}
+.qc-icon {
+  background: none; border: 0; color: inherit; font-size: 22px; line-height: 1; padding: 0 4px;
+}
+.qc-buttons { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+.qc-small { font-size: .85rem; color: var(--muted); }
+.qc-error { color: var(--error); min-height: 1.2em; margin: 8px 0 0; font-size: .9rem; }
+.qc-sr { position: absolute; left: -9999px; }
+
+/* Question log and study guide */
+.qc-thread { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.qc-thread li { background: var(--card); border-radius: 8px; padding: 8px 10px; }
+.qc-q { font-weight: 600; }
+.qc-tag {
+  display: inline-block; font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--muted); margin-right: 6px;
+}
+.qc-a { margin-top: 4px; white-space: pre-wrap; }
+
+.qc-guide { margin-bottom: 8px; }
+.qc-guide h3 { font-size: .95rem; margin: 10px 0 4px; }
+.qc-guide ul { margin: 0; padding-left: 20px; }
