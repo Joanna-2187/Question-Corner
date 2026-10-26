@@ -1,12 +1,10 @@
 # Question Corner
 
 A floating chat widget for students. During class, a student opens the bubble and asks
-questions. Each question can get a **hint** (points the way, doesn't solve it) or a
-**short answer** (3 sentences max). When they end the session, they see a log of every
-question and can generate a **study guide** from it (generated automatically once the log
+questions. Each question can get a **hint** or a **short answer** . When they end the session, 
+they see a log of every question and can generate a **study guide** from it (generated automatically once the log
 has 3 or more questions).
 
-There is no teacher side. Everything is for the student.
 
 ## Run it
 
