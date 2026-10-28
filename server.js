@@ -17,7 +17,7 @@ try {
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST; // unset: listen on all interfaces, as a hosted deploy needs
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const TIMEOUT_MS = 60000;
 const MAX_OUTPUT_TOKENS = 2048; // includes the model's internal thinking tokens
