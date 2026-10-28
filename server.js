@@ -19,7 +19,7 @@ const HOST = process.env.HOST; // unset: listen on all interfaces, as a hosted d
 const API_KEY = process.env.GEMINI_API_KEY;
 // Models are tried in order; the next one is used when a call fails. GEMINI_MODELS is a
 // comma-separated list; GEMINI_MODEL (a single id) still works.
-const MODELS = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || 'gemini-3.8-flash,gemini-2.5-flash,gemini-2.5-flash-lite')
+const MODELS = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || 'gemini-3.8-flash,gemini-3.7-flash,gemini-3.5-flash,gemini-3.5-flash-lite')
   .split(',').map((m) => m.trim()).filter(Boolean);
 const apiUrl = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 const TIMEOUT_MS = 60000;
