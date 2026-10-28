@@ -40,7 +40,7 @@ there is no such message and the answer is just bad, the model produced it.
 | Env var | Default | |
 |---|---|---|
 | `GEMINI_API_KEY` | none | Required. The shared key used for all users. Set it in `.env` |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Model id to use |
+| `GEMINI_MODELS` | `gemini-3.8-flash,gemini-2.5-flash,gemini-2.5-flash-lite` | Comma-separated model ids, tried in order; the next is used when one fails. `GEMINI_MODEL` (single id) also works |
 | `PORT` | `3000` | |
 | `HOST` | all interfaces | Optional. Set `HOST=127.0.0.1` to accept local connections only. Anyone who can reach the server spends your key's quota and there is no rate limit |
 

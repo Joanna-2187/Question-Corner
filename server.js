@@ -17,8 +17,11 @@ try {
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST; // unset: listen on all interfaces, as a hosted deploy needs
 const API_KEY = process.env.GEMINI_API_KEY;
-const MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+// Models are tried in order; the next one is used when a call fails. GEMINI_MODELS is a
+// comma-separated list; GEMINI_MODEL (a single id) still works.
+const MODELS = (process.env.GEMINI_MODELS || process.env.GEMINI_MODEL || 'gemini-3.8-flash,gemini-2.5-flash,gemini-2.5-flash-lite')
+  .split(',').map((m) => m.trim()).filter(Boolean);
+const apiUrl = (model) => `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 const TIMEOUT_MS = 60000;
 const MAX_OUTPUT_TOKENS = 2048; // includes the model's internal thinking tokens
 const MAX_ANSWER_CHARS = 800;
@@ -92,13 +95,28 @@ function readJson(req) {
   });
 }
 
-// Runs one Gemini generateContent call with the shared key. The key never leaves the server.
-// Any failure (missing key, timeout, API error, empty output) becomes an HttpError.
+// Tries each model in MODELS until one answers; throws the last error if all fail.
 async function callModel(system, prompt, maxChars) {
   if (!API_KEY) throw new HttpError(500, 'The server has no API key configured.');
+  let lastErr;
+  for (const model of MODELS) {
+    try {
+      return await callOneModel(model, system, prompt, maxChars);
+    } catch (err) {
+      if (!(err instanceof HttpError)) throw err;
+      lastErr = err;
+      console.warn(`Model ${model} failed (${err.message}); trying the next one.`);
+    }
+  }
+  throw lastErr;
+}
+
+// Runs one Gemini generateContent call with the shared key. The key never leaves the server.
+// Any failure (timeout, API error, empty output) becomes an HttpError.
+async function callOneModel(model, system, prompt, maxChars) {
   let res;
   try {
-    res = await fetch(API_URL, {
+    res = await fetch(apiUrl(model), {
       method: 'POST',
       headers: {
         'x-goog-api-key': API_KEY,
@@ -207,6 +225,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Question Corner listening on port ${PORT}${HOST ? ` (host ${HOST})` : ''}, model ${MODEL}`);
+  console.log(`Question Corner listening on port ${PORT}${HOST ? ` (host ${HOST})` : ''}, models ${MODELS.join(' -> ')}`);
   if (!API_KEY) console.warn('GEMINI_API_KEY is not set (put it in .env): questions will fail until it is.');
 });
