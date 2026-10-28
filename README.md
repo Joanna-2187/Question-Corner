@@ -42,7 +42,7 @@ there is no such message and the answer is just bad, the model produced it.
 | `GEMINI_API_KEY` | none | Required. The shared key used for all users. Set it in `.env` |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Model id to use |
 | `PORT` | `3000` | |
-| `HOST` | `127.0.0.1` | Anyone who can reach the server spends your key's quota; there is no rate limit, so only expose it on a network you trust |
+| `HOST` | all interfaces | Optional. Set `HOST=127.0.0.1` to accept local connections only. Anyone who can reach the server spends your key's quota and there is no rate limit |
 
 These can go in `.env` or be set as real environment variables (real ones win).
 

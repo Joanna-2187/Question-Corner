@@ -15,7 +15,7 @@ try {
 }
 
 const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || '127.0.0.1';
+const HOST = process.env.HOST; // unset: listen on all interfaces, as a hosted deploy needs
 const API_KEY = process.env.GEMINI_API_KEY;
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
@@ -168,7 +168,13 @@ const routes = {
 
 // Serves files from public/ and blocks paths that escape it.
 function serveStatic(req, res) {
-  const urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  let urlPath;
+  try {
+    urlPath = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  } catch {
+    res.writeHead(400).end('Bad request');
+    return;
+  }
   const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
   const file = path.join(PUBLIC_DIR, rel);
   if (!file.startsWith(PUBLIC_DIR + path.sep)) {
@@ -201,6 +207,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Question Corner running at http://${HOST}:${PORT} (model ${MODEL})`);
+  console.log(`Question Corner listening on port ${PORT}${HOST ? ` (host ${HOST})` : ''}, model ${MODEL}`);
   if (!API_KEY) console.warn('GEMINI_API_KEY is not set (put it in .env): questions will fail until it is.');
 });
