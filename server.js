@@ -1,15 +1,26 @@
-// Question Corner server: serves the widget and answers each question by running
-// Claude Code headless ("claude -p"). No API key, no dependencies (Node 18+).
+// Question Corner server: serves the widget and answers each question with the Gemini API,
+// using one server-side key shared by all users. No dependencies (Node 18+).
 const http = require('http');
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
-const { spawn } = require('child_process');
+
+// Loads KEY=value lines from .env (gitignored) without overriding real environment variables.
+try {
+  for (const line of fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (m && !(m[1] in process.env)) process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+} catch {
+  // no .env file: fall back to the real environment
+}
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
-const CLAUDE_BIN = process.env.CLAUDE_BIN || 'claude';
+const API_KEY = process.env.GEMINI_API_KEY;
+const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const TIMEOUT_MS = 60000;
+const MAX_OUTPUT_TOKENS = 2048; // includes the model's internal thinking tokens
 const MAX_ANSWER_CHARS = 800;
 const MAX_GUIDE_CHARS = 4000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
@@ -81,45 +92,42 @@ function readJson(req) {
   });
 }
 
-// Runs one "claude -p" call (prompt on stdin) from the temp dir so it can't read this project.
-// Any failure (missing CLI, timeout, bad exit, empty output) becomes an HttpError.
-function callClaude(system, prompt, maxChars) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(CLAUDE_BIN, ['-p'], {
-      cwd: os.tmpdir(),
-      shell: process.platform === 'win32', // claude is a .cmd shim on Windows
-      stdio: ['pipe', 'pipe', 'pipe'],
+// Runs one Gemini generateContent call with the shared key. The key never leaves the server.
+// Any failure (missing key, timeout, API error, empty output) becomes an HttpError.
+async function callModel(system, prompt, maxChars) {
+  if (!API_KEY) throw new HttpError(500, 'The server has no API key configured.');
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        system_instruction: { parts: [{ text: system }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
-    let out = '';
-    let err = '';
-    let done = false;
-    const timer = setTimeout(() => {
-      child.kill();
-      finish(reject, new HttpError(504, 'Claude took too long. Try again.'));
-    }, TIMEOUT_MS);
-    function finish(fn, value) {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      fn(value);
-    }
-
-    child.stdout.on('data', (d) => { out += d; });
-    child.stderr.on('data', (d) => { err += d; });
-    child.on('error', () =>
-      finish(reject, new HttpError(502, 'Could not run Claude Code. Is "claude" installed and on your PATH?')));
-    child.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`claude exited with code ${code}: ${err.trim().slice(0, 300)}`);
-        return finish(reject, new HttpError(502, 'Claude Code failed. Make sure you are logged in (run "claude" once).'));
-      }
-      const text = out.trim();
-      if (!text) return finish(reject, new HttpError(502, 'Claude returned an empty reply. Try again.'));
-      finish(resolve, text.length > maxChars ? `${text.slice(0, maxChars)}...` : text);
-    });
-    child.stdin.on('error', () => {}); // spawn failures are handled by the 'error' event
-    child.stdin.end(`${system}\n\n${prompt}`);
-  });
+  } catch (err) {
+    if (err.name === 'TimeoutError') throw new HttpError(504, 'The model took too long. Try again.');
+    console.error('Gemini request failed:', err.message);
+    throw new HttpError(502, 'Could not reach the Gemini API. Try again.');
+  }
+  if (!res.ok) {
+    console.error(`Gemini API returned ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    throw new HttpError(502, res.status === 429
+      ? 'The model is busy right now. Try again in a moment.'
+      : 'The Gemini API request failed. Try again.');
+  }
+  const data = await res.json();
+  const parts = (data.candidates && data.candidates[0] && data.candidates[0].content
+    && data.candidates[0].content.parts) || [];
+  const text = parts.map((p) => p.text || '').join('').trim();
+  if (!text) throw new HttpError(502, 'The model returned an empty reply. Try again.');
+  return text.length > maxChars ? `${text.slice(0, maxChars)}...` : text;
 }
 
 function cleanString(value, max) {
@@ -134,7 +142,7 @@ const routes = {
     const mode = body.mode;
     if (!question) throw new HttpError(400, 'Type a question first.');
     if (!MODE_INSTRUCTIONS[mode]) throw new HttpError(400, 'Mode must be "hint" or "answer".');
-    const text = await callClaude(
+    const text = await callModel(
       `${SYSTEM_BASE} ${MODE_INSTRUCTIONS[mode]}`,
       `<question>\n${question}\n</question>`,
       MAX_ANSWER_CHARS,
@@ -153,7 +161,7 @@ const routes = {
       })
       .filter(Boolean);
     if (!lines.length) throw new HttpError(400, 'No questions to summarize.');
-    const guide = await callClaude(STUDY_GUIDE_SYSTEM, `<log>\n${lines.join('\n')}\n</log>`, MAX_GUIDE_CHARS);
+    const guide = await callModel(STUDY_GUIDE_SYSTEM, `<log>\n${lines.join('\n')}\n</log>`, MAX_GUIDE_CHARS);
     return { guide };
   },
 };
@@ -193,5 +201,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Question Corner running at http://${HOST}:${PORT} (runs "${CLAUDE_BIN} -p")`);
+  console.log(`Question Corner running at http://${HOST}:${PORT} (model ${MODEL})`);
+  if (!API_KEY) console.warn('GEMINI_API_KEY is not set (put it in .env): questions will fail until it is.');
 });

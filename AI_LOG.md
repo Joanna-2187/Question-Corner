@@ -14,3 +14,7 @@ The first version called the Anthropic API with a key each student pasted in. Th
 
 - Model's job and the code's checks are written down in README.md.
 - Tested with a stand-in `claude` command: ask, study guide, invalid mode (400) and missing CLI (502) all behave as expected. The widget UI and the real `claude -p` call have not been tested yet.
+
+## 3. Switch to one shared Gemini API key
+
+The server now calls the Gemini `generateContent` API directly with a single `GEMINI_API_KEY`, so it works for every user on any device. Students never see or enter a key. The key lives in `.env` (already gitignored; `.env.example` is the template), read by a small built-in loader in `server.js`. Model is `GEMINI_MODEL` (default `gemini-2.5-flash`). Not tested against the live API yet.

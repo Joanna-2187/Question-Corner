@@ -10,19 +10,16 @@ There is no teacher side. Everything is for the student.
 
 ## Run it
 
-Requires [Node.js](https://nodejs.org) 18+ and [Claude Code](https://claude.com/claude-code)
-installed and logged in on the same machine (run `claude` once to check). There are no
-packages to install and no API key.
+Requires [Node.js](https://nodejs.org) 18+ and a [Gemini API key](https://aistudio.google.com/apikey).
+There are no packages to install.
 
-```
-npm start
-```
+1. Copy `.env.example` to `.env` and paste your key after `GEMINI_API_KEY=`.
+   `.env` is in `.gitignore`, so the key is never committed.
+2. Run `npm start` and open http://localhost:3000.
 
-Open http://localhost:3000.
-
-The server runs Claude Code headless (`claude -p`) for each request, so it uses your Claude
-Code access instead of the paid API. That means it works on the machine where Claude Code
-is logged in, not on students' own devices.
+The server calls the Gemini API with this one key for every request, so students need no
+key or login of their own. The key stays on the server and is never sent to the browser.
+All usage counts against that key's account.
 
 ## What the model does, and what the code checks
 
@@ -32,23 +29,27 @@ list of questions into a short study guide. Both are plain text.
 **The surrounding code (`server.js`) is responsible for:**
 - the instructions: hint vs. answer mode, length limits, and marking student text as untrusted (`<question>` / `<log>` tags)
 - validating input: non-empty question, mode is `hint` or `answer`, question length and log size caps
-- running `claude -p` from the temp folder, with a 60 second timeout
-- checking the exit code, rejecting empty output, and capping output length
+- calling the API with a 60 second timeout and an output token cap
+- checking the HTTP status, rejecting empty output, and capping output length
 - turning every failure into a clear error message in the widget
 
-**Debugging:** if the server console shows `claude exited with code ...`, or the widget says
-it could not run Claude Code, the CLI or the code failed (not installed, not logged in,
-timeout). If there is no such message and the answer is just bad, the model produced it.
+**Debugging:** if the server console shows `Gemini API returned ...` or `Gemini request
+failed`, the key, the network or the API failed (bad key, quota, rate limit, timeout). If
+there is no such message and the answer is just bad, the model produced it.
 
 ## Settings
 
 | Env var | Default | |
 |---|---|---|
+| `GEMINI_API_KEY` | none | Required. The shared key used for all users. Set it in `.env` |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Model id to use |
 | `PORT` | `3000` | |
-| `HOST` | `127.0.0.1` | Leave it on localhost: the server uses your Claude login for anyone who can reach it |
-| `CLAUDE_BIN` | `claude` | Path to the Claude Code command if it isn't on your PATH |
+| `HOST` | `127.0.0.1` | Anyone who can reach the server spends your key's quota; there is no rate limit, so only expose it on a network you trust |
+
+These can go in `.env` or be set as real environment variables (real ones win).
 
 ## Layout
 
 - `server.js`: static files plus `/api/ask` and `/api/study-guide`
+- `.env.example`: template for `.env`, where the API key goes
 - `public/`: the widget (`index.html`, `app.js`, `style.css`)
